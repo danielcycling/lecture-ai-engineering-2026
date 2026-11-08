@@ -2,14 +2,34 @@
 
 ## 演習
 
-- 第1回（素のLLM）とエージェントの回答の違い：
-- `--trace` で見えたツール呼び出し（ツール名と引数）：
-- 1つの質問での LLM 呼び出し回数（`requests`）：
-- 追加したツールと、docstring に書いた説明：
+- 第1回（素のLLM）とエージェントの回答の違い：第一回の回答は未知ゆえ回答が助長になっていたが，今回は箇条書きで非常に簡潔にこたえられている．
+- `--trace` で見えたツール呼び出し（ツール名と引数）：search_glossary({'query': 'LoRA'}), search_glossary({'query': 'QLoRA'})
+- 1つの質問での LLM 呼び出し回数（`requests`）：2回
+- 追加したツールと、docstring に書いた説明：make_quiz, '指定した回の用語から1つを選び，確認問題と答えを返す．「第2回の確認問題を出して」のように，復習用の問題を求められたときに使う．'
 
 ## 宿題
 
-- 取り組んだレベル：基礎 / 実装 / 発展
-- やったこと：
-- 結果：
-- 気づき・疑問：
+- 取り組んだレベル：基礎
+- やったこと：INSTRUCTIONSから'必ず search_glossary で用語集を確認する'という行を丸々消した．
+- 結果：それでもエージェントはsearch_glossaryを使って回答した．
+```
+uv run python -m app.agent --trace 'LoRAとQLoRAの違いは？'
+[model] gemini-3.5-flash-lite
+LoRAとQLoRAの違いは以下のとおりです。
+
+* **LoRA（Low-Rank Adaptation）**
+  事前学習済みの重みはそのまま固定し、重みの更新分を2つの小さな低ランク行列（アダプタ）だけで学習するPEFT（Parameter-Efficient Fine-Tuning）手法です。学習パラメータやメモリを大幅に削減できます。
+
+* **QLoRA（Quantized LoRA）**
+  LoRAの仕組みをベースにしつつ、**ベースモデルの重みを4ビットなどに量子化**してメモリをさらに大幅に節約したうえで学習する手法です。これにより、より大きなモデルを小さなGPU環境でも効率よく扱えるようになります。
+
+（第2回）
+
+--- trace ---
+[tool call]   search_glossary({'query': 'LoRA'})
+[tool call]   search_glossary({'query': 'QLoRA'})
+[tool return] search_glossary -> [{"term": "LoRA", "lecture": 2, "definition": "事前学習済みの重みは固定したまま、重みの更新分を2つの小さな行列の積（低ランク行列）で表し、その小さな行列だけを学習するPEFT手法。学習するパラ…
+[tool return] search_glossary -> [{"term": "QLoRA", "lecture": 2, "definition": "ベースモデルの重みを4ビットなどに量子化してメモリを節約したうえで、LoRAで学習する手法。より大きなモデルを小さなGPUで扱える。本講座の第2…
+[usage] RunUsage(cost=Decimal('0.0008784'), details={'text_prompt_tokens': 1328}, input_text_tokens=1328, input_tokens=1328, output_tokens=192, requests=2, tool_calls=2)
+```
+- 気づき・疑問：agent.pyの中にagent.tool_plain(tools.search_glossary)が記載されているから呼び出したのだろうか？
